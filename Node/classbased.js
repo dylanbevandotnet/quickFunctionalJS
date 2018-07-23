@@ -1,51 +1,23 @@
 "use strict";
-let {Player, Token, GridIndex, GameErrors} = require('./types');
+let {Player, Token, GameErrors, convertTokenPositionToArrayIndex, printBoard} = require('./types');
+let moves = require('./moves');
 
-let TicTacToe = () => {
-    let gameBoard = new Array(9).fill(" ");
-    let currentPlayer = Player.xs;
-}
-
-let convertTokenPositionToArrayIndex = tokenPosition => {
-    let yValue = 0;
-    switch(tokenPosition.y){
-        case GridIndex.one:
-            yValue = 0;
-            break;
-        case GridIndex.two:
-            yValue = 3;
-            break;
-        case GridIndex.three:
-            yValue = 6;
-            break;
-    }
-
-    switch(tokenPosition.x) {
-        case GridIndex.one:
-            return yValue;
-        case GridIndex.two:
-            return yValue + 1;
-        case GridIndex.three:
-            return yValue + 2;
-    }
+let TicTacToe = function(repository) {
+    this.tokens = new Array(9).fill(" ");
+    this.currentPlayer = Player.xs;
+    this.repository = repository;
 };
 
-TicTacToe.prototype._validateTurn = player => {
-    return player === this.currentPlayer
-};
+TicTacToe.prototype.placeToken = function(playerMove, cb) {
+    const self = this;
 
-TicTacToe.prototype._validateToken = (index) => {
-    return this.gameBoard[index] === ' ';
-};
-
-TicTacToe.prototype.placeToken = (playerMove, cb) => {
     if(playerMove.player !== this.currentPlayer) {
         return cb(GameErrors.NotTurnOfPlayer);
     }
 
     let tokenIndex = convertTokenPositionToArrayIndex(playerMove.position);
 
-    if(this.gameBoard[tokenIndex] !== ' '){
+    if(this.tokens[tokenIndex] !== ' '){
         return cb(GameErrors.GameSquareNotEmpty);
     }
 
@@ -60,7 +32,21 @@ TicTacToe.prototype.placeToken = (playerMove, cb) => {
             this.currentPlayer = Player.xs;
             break; 
     }
-    this.gameBoard[tokenIndex] = token;
+    this.tokens[tokenIndex] = token;
+    repository.save(this, (err) => {
+        return cb(null, this);
+    });
 };
 
-module.exports = TicTacToe;
+let gameBoard = new TicTacToe();
+
+for(let move of moves) {
+    gameBoard.placeToken(move, (err, board) => {
+        if(err){
+            console.log('invalid move of ' + err);
+        }else{
+            console.log('move is legit');
+        }
+        printBoard(gameBoard.tokens);
+    });
+}

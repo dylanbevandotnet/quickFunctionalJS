@@ -1,35 +1,12 @@
 "use strict";
 let {Subject, Observable} = require('rxjs');
-let {Player, Token, GridIndex, GameErrors, ok, error, isOk} = require('./types');
+let {Player, Token, printBoard, GameErrors, convertTokenPositionToArrayIndex} = require('./types');
+let {ok, error, isOk} = require('./functional');
+let moves = require('./moves');
 
 let createGameBoard = (currentPlayer, tokens) => Object.freeze({currentPlayer: currentPlayer, tokens: tokens});
 
 let getTokenForPlayer = player => player === Player.xs ? 'X' : 'O';
-
-let convertTokenPositionToArrayIndex = tokenPosition => {
-    let yValue = 0;
-    switch(tokenPosition.y){
-        case GridIndex.one:
-            yValue = 0;
-            break;
-        case GridIndex.two:
-            yValue = 3;
-            break;
-        case GridIndex.three:
-            yValue = 6;
-            break;
-    }
-
-    switch(tokenPosition.x) {
-        case GridIndex.one:
-            return yValue;
-        case GridIndex.two:
-            return yValue + 1;
-        case GridIndex.three:
-            return yValue + 2;
-    }
-};
-
 
 let getNextPlayer = player => player = Player.xs ? Player.Os : Player.xs;
 
@@ -55,23 +32,6 @@ let placeToken = newMove => {
     return ok(updatedBoard);
 };
 
-
-let binder = (f1, f2) => {
-    return x => {
-        let result = f1(x);
-
-        return  isOk(result)
-                ? f2(result.ok)
-                : result;
-    };
-};
-
-
-Function.prototype.bindF = function(f) {
-    var self = this;
-    return binder(self,f);
-}
-
 let gamePipe = validateTurn
                 .bindF(validateToken)
                 .bindF(placeToken);
@@ -82,7 +42,7 @@ let boardStream = new Subject();
 let moveStream = new Subject();
 let errorStream = new Subject();
 
-boardStream.subscribe(b => console.log('Game state is '  + JSON.stringify(b, null, 2)));
+boardStream.subscribe(b => printBoard(b.tokens));
 
 let combinedStream = Observable.zip(boardStream, moveStream, (b,m) => {
     return {
@@ -99,37 +59,12 @@ combinedStream.subscribe(gameMove => {
         boardStream.next(result.ok);
     }else{
         console.log('invalid move of ' + result.error);
+        errorStream.next(result.error);
         boardStream.next(gameBoard);
     }
 });
 
 boardStream.next(gameBoard);
-
-
-let moveOne = {
-    player: Player.xs,
-    position: {x:GridIndex.two, y:GridIndex.two}
-};
-
-moveStream.next(moveOne);
-
-let moveTwo = {
-    player: Player.xs,
-    position: {x:GridIndex.two, y:GridIndex.two}
-};
-
-moveStream.next(moveTwo);
-
-let moveThree = {
-    player: Player.Os,
-    position: {x:GridIndex.two, y:GridIndex.two}
-};
-
-moveStream.next(moveThree);
-
-let moveFour = {
-    player: Player.Os,
-    position: {x:GridIndex.one, y:GridIndex.two}
-};
-
-moveStream.next(moveFour);
+for(let move of moves) {
+    moveStream.next(move);
+}
