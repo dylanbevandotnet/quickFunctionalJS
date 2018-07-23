@@ -16,6 +16,19 @@ let getTokenForPlayer = player =>
 
 let getNextPlayer = player => player = Player.xs ? Player.Os : Player.xs;
 
+let validateTurn = newMove => 
+    newMove.gameBoard.currentPlayer === newMove.playerMove.player
+    ? ok (newMove)
+    : error(GameErrors.NotTurnOfPlayer);
+
+let validateToken = newMove => {
+    let tokenIndex = convertTokenPositionToArrayIndex(newMove.playerMove.position);
+
+    return newMove.gameBoard.tokens[tokenIndex] === Token.empty
+           ? ok (newMove)
+           : error(GameErrors.GameSquareNotEmpty);
+};
+
 let placeToken = newMove => {
     let tokenIndex = convertTokenPositionToArrayIndex(newMove.playerMove.position);
     let token = getTokenForPlayer(newMove.gameBoard.currentPlayer)
@@ -25,10 +38,14 @@ let placeToken = newMove => {
     return ok(updatedBoard);
 };
 
+let ticTacToePipe = validateTurn
+                    .bindF(validateToken)
+                    .bindF(placeToken);
+
 let gameBoard = createGameBoard(Player.xs, (new Array(9).fill(Token.empty)));
 
 for(let move of moves) {
-    let result = placeToken({
+    let result = ticTacToePipe({
         gameBoard: gameBoard,
         playerMove: move
     });

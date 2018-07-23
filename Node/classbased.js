@@ -10,8 +10,16 @@ let TicTacToe = function() {
 TicTacToe.prototype.placeToken = function(playerMove, cb) {
     const self = this;
 
+    if(playerMove.player !== this.currentPlayer) {
+        return cb(GameErrors.NotTurnOfPlayer);
+    }
+
     let tokenIndex = convertTokenPositionToArrayIndex(playerMove.position);
 
+    if(this.tokens[tokenIndex] !== ' '){
+        return cb(GameErrors.GameSquareNotEmpty);
+    }
+    
     let token = "";
     switch(playerMove.player) {
         case Player.xs:
