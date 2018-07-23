@@ -1,4 +1,5 @@
 "use strict";
+let {Subject, Observable} = require('rxjs');
 let {Player, Token, printBoard, GameErrors, convertTokenPositionToArrayIndex} = require('./types');
 let {ok, error, isOk} = require('./functional');
 let moves = require('./moves');
@@ -44,18 +45,38 @@ let ticTacToePipe = validateTurn
 
 let gameBoard = createGameBoard(Player.xs, (new Array(9).fill(Token.empty)));
 
-for(let move of moves) {
-    let result = ticTacToePipe({
-        gameBoard: gameBoard,
-        playerMove: move
-    });
+let boardStream = new Subject();
+let moveStream = new Subject();
+let errorStream = new Subject();
 
+// we create an observer to the boardStream that has no impact on the current code flow
+boardStream.subscribe(b => printBoard(b.tokens));
+
+// we zip up the boardstream and the move stream such that they both come in a pair
+let combinedStream = Observable.zip(boardStream, moveStream, (b,m) => {
+    return {
+        gameBoard: b,
+        playerMove: m
+    }
+});
+
+// when we have a move and a gameboard perform the move
+combinedStream.subscribe(gameMove => {
+    let gameBoard = gameMove.gameBoard;
+    let result = ticTacToePipe(gameMove);
     if(isOk(result)){
         gameBoard = result.ok;
         console.log('move is legit');
+        boardStream.next(result.ok);
     } else {
         console.log('invalid move of ' + result.error);
+        errorStream.next(result.error);
+        // board state did not change to push the current state back to the observable
+        boardStream.next(gameBoard);
     }
+});
 
-    printBoard(gameBoard.tokens);
+boardStream.next(gameBoard);
+for(let move of moves) {
+    moveStream.next(move);
 }

@@ -36,5 +36,6 @@ module.exports = {
             let row = tokens.slice(i,i+3);
             console.log(`| ${row[0]} | ${row[1]} | ${row[2]} |`);
         }
+        console.log('');
     }
 };
