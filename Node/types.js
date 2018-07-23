@@ -4,12 +4,6 @@ module.exports = {
     Player: Object.freeze({xs: 'x', Os : 'o'}),
     Token: Object.freeze({x: "X", o: "O", empty: " " }),
     GridIndex: GridIndex,
-    GameErrors: Object.freeze({
-        NotTurnOfPlayer: "Not the player's turn",
-        GameSquareNotEmpty: "That square isn't empty"
-    }),
-
-
     convertTokenPositionToArrayIndex: tokenPosition => {
         let yValue = 0;
         switch(tokenPosition.y){
