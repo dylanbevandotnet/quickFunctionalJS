@@ -15,9 +15,43 @@ let binder = (f1, f2) => {
     };
 };
 
+let promiseBinder = (f1, f2) => {
+    return x => 
+        f1(x)
+         .then(result => {
+             return  isOk(result)
+                     ? f2(result.ok)
+                     : Promise.resolve(result);
+        })
+        .catch(e => Promise.resolve(error(e)));
+};
+
 Function.prototype.bindF = function(f) {
-    var self = this;
+    const self = this;
     return binder(self,f);
+};
+
+Function.prototype.bindP = function(f) {
+    const self = this;
+    return promiseBinder(this,f);
+};
+
+Promise.map = function(f) {
+    return x => {
+        return Promise.resolve(f(x));
+    }
+}
+
+Function.prototype.mapCb = function() {
+    const self = this;
+    return x => {
+        return self(x, (err, item) => {
+            if(err){
+                return error(err);
+            }
+            return ok(item);
+        })
+    };
 }
 
 module.exports = {
